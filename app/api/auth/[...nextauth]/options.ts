@@ -1,11 +1,12 @@
 import type { NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import Github from "next-auth/providers/github";
-import Credentials from "next-auth/providers/credentials";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { storeUserLogin, validateUser } from "../../lib/user";
 
 export const options: NextAuthOptions = {
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         username: {
@@ -19,12 +20,27 @@ export const options: NextAuthOptions = {
           placeholder: "your-password",
         },
       },
-      async authorize(credentials, req) {
-        const user = { id: "1", username: "ayush", password: "121212" };
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) {
+          return null;
+        }
 
-        if (user) {
-          return user;
-        } else {
+        try {
+          const user = await validateUser(
+            credentials.username,
+            credentials.password
+          );
+          if (user) {
+            await storeUserLogin(user.username);
+
+            return {
+              id: user._id.toString(),
+              name: user.username,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error("login error", error);
           return null;
         }
       },
