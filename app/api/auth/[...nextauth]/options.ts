@@ -30,12 +30,17 @@ export const options: NextAuthOptions = {
             credentials.username,
             credentials.password
           );
-          if (user) {
+
+          if (user && user.username) {
             await storeUserLogin(user.username);
 
             return {
-              id: user._id.toString(),
+              id:
+                user._id?.toString() ||
+                user.id?.toString() ||
+                credentials.username,
               name: user.username,
+              email: user.email || null,
             };
           }
           return null;
